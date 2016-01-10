@@ -179,6 +179,10 @@ object AkkaActorState {
     propOrElse(propName, defaultVal)
   }
 
+  def newActorSystem(name: String, configuration: Config): ActorSystem = {
+    ActorSystem(name, configuration)
+  }
+
   def newActorSystem(name: String): ActorSystem = {
     ActorSystem(name, config)
   }
@@ -206,6 +210,8 @@ object AkkaActorState {
     try {
       actorLatch.await()
       system.shutdown()
+
+      Thread.sleep(5000)
     } catch {
       case ex: InterruptedException => {
         ex.printStackTrace()

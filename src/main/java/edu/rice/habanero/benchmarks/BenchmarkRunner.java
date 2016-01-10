@@ -63,14 +63,17 @@ public class BenchmarkRunner {
         final List<Double> rawExecTimes = new ArrayList<>(iterations);
 
         {
-
             System.out.println("Execution - Iterations: ");
             for (int i = 0; i < iterations; i++) {
                 final long startTime = System.nanoTime();
                 benchmark.runIteration();
                 final long endTime = System.nanoTime();
 
-                final double execTimeMillis = (endTime - startTime) / 1e6;
+                double execTimeMillis =  (endTime - startTime) / 1e6;;
+                if (benchmarkName.contains("Akka")) {
+                    execTimeMillis -= 5000 ;
+                }
+
                 rawExecTimes.add(execTimeMillis);
 
                 System.out.printf(execTimeOutputFormat, benchmark.name(), " Iteration-" + i, execTimeMillis);

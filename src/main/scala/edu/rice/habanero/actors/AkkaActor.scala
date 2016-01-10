@@ -93,7 +93,7 @@ abstract class AkkaActor[MsgType] extends Actor {
   }
 }
 
-protected class StartAkkaActorMessage(promise: Promise[Boolean]) {
+protected class StartAkkaActorMessage(promise: Promise[Boolean]) extends Serializable {
   def await() {
     Await.result(promise.future, Duration.Inf)
   }

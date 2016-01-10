@@ -2,6 +2,7 @@ package edu.rice.habanero.benchmarks.piprecision;
 
 import edu.rice.habanero.benchmarks.BenchmarkRunner;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -67,13 +68,20 @@ public final class PiPrecisionConfig {
         protected static StartMessage ONLY = new StartMessage();
     }
 
-    protected static class StopMessage {
+    protected static class StopMessage implements Serializable{
         protected static StopMessage ONLY = new StopMessage();
     }
 
-    protected static class WorkMessage {
+    protected static class WorkMessage implements Serializable {
         public final int scale;
         public final int term;
+        public int id;
+
+        public WorkMessage(final int scale, final int term, int id) {
+            this.scale = scale;
+            this.term = term;
+            this.id = id;
+        }
 
         public WorkMessage(final int scale, final int term) {
             this.scale = scale;
@@ -81,7 +89,7 @@ public final class PiPrecisionConfig {
         }
     }
 
-    protected static class ResultMessage {
+    protected static class ResultMessage implements Serializable{
         public final BigDecimal result;
         public final int workerId;
 

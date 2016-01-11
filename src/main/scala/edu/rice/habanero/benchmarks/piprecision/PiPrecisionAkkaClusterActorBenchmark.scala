@@ -7,9 +7,12 @@ import akka.actor._
 import akka.cluster.ClusterEvent._
 import akka.cluster.{Cluster, Member, MemberStatus}
 import com.typesafe.config.ConfigFactory
-import edu.rice.habanero.actors.{AkkaActorState, AkkaActor}
-import edu.rice.habanero.benchmarks.{Benchmark, BenchmarkRunner}
+import edu.rice.habanero.actors.{AkkaActor, AkkaActorState}
 import edu.rice.habanero.benchmarks.piprecision.PiPrecisionConfig.{StartMessage, StopMessage}
+import edu.rice.habanero.benchmarks.{Benchmark, BenchmarkRunner}
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object PiPrecisionAkkaClusterActorBenchmark {
 
@@ -30,12 +33,15 @@ object PiPrecisionAkkaClusterActorBenchmark {
     def runIteration() {
       val config = ConfigFactory.parseString(s"akka.cluster.roles=[master]").
         withFallback(ConfigFactory.parseString(s"akka.remote.netty.tcp.port=3301")).
+        withFallback(ConfigFactory.parseString(s"akka.cluster.role.worker.min-nr-of-members = ${PiPrecisionConfig.NUM_WORKERS}")).
         withFallback(ConfigFactory.load())
+
+      val name = config.getString("actorSystem.name")
 
       val numWorkers: Int = PiPrecisionConfig.NUM_WORKERS
       val precision: Int = PiPrecisionConfig.PRECISION
 
-      val system = AkkaActorState.newActorSystem("SavinaSystem", config)
+      val system = AkkaActorState.newActorSystem(name, config)
 
       system.actorOf(MonitoringActor.props)
       val master = system.actorOf(Master.props(numWorkers, precision), "master")
@@ -66,13 +72,12 @@ object Master {
     private var numTermsReceived: Int = 0
     private var stopRequests: Boolean = false
 
+
     override def onPostStart() {
       (1 to numWorkers).foreach { el =>
         val config = ConfigFactory.parseString(s"akka.cluster.roles=[worker]").
           withFallback(ConfigFactory.load())
-
-        val system = ActorSystem("SavinaSystem", config)
-
+        val system = ActorSystem(context.system.name, config)
         system.actorOf(Worker.props, "worker")
       }
     }
@@ -148,9 +153,9 @@ object Worker {
 
     override def preStart(): Unit = cluster.subscribe(self, classOf[MemberUp])
 
-    override def postStop(): Unit = {
+    override def onPostExit(): Unit = {
       cluster.unsubscribe(self)
-      context.system.terminate()
+      Await.result(context.system.terminate(), 1.seconds)
     }
 
     override def process(msg: AnyRef) = {
@@ -187,19 +192,19 @@ object MonitoringActor {
     val cluster = Cluster(context.system)
 
     def receive = {
-      case state: CurrentClusterState => //log.info(s"Current state: $state")
+      case state: CurrentClusterState => log.info(s"Current state: $state")
       case MemberUp(member) => log.info(s"Member is up: $member, roles: ${member.roles}")
       case MemberRemoved(member, previousState) => //log.info(s"Member removed: $member, roles: ${member.roles}")
       case MemberExited(member) => log.info(s"Member exited: $member, roles: ${member.roles}")
-      case UnreachableMember(member) => //log.info(s"Member unreachable: $member, roles: ${member.roles}")
-      case LeaderChanged(address) => //log.info(s"Leader changed: $address")
-      case RoleLeaderChanged(role, member) => //log.info(s"Role $role leader changed: $member")
+      case UnreachableMember(member) => log.info(s"Member unreachable: $member, roles: ${member.roles}")
+      case LeaderChanged(address) => log.info(s"Leader changed: $address")
+      case RoleLeaderChanged(role, member) => log.info(s"Role $role leader changed: $member")
       case e: ClusterDomainEvent =>
     }
 
     // subscribe to cluster changes, resubscribe when restarted
     override def preStart(): Unit = {
-      cluster.subscribe(self, initialStateMode = InitialStateAsEvents, classOf[ClusterDomainEvent])
+      cluster.subscribe(self, initialStateAsEvents, classOf[ClusterDomainEvent])
     }
   }
   val props = Props(classOf[MonitoringActor])

@@ -192,7 +192,7 @@ object AkkaActorState {
     AkkaActorState.actorLatch.updateCount()
 
     val promise = Promise[Boolean]()
-    val message: StartAkkaActorMessage = new StartAkkaActorMessage(promise)
+    val message: StartAkkaActorMessage = new  StartAkkaActorMessage(promise)
     actorRef ! message
 
     val f = promise.future
@@ -209,9 +209,7 @@ object AkkaActorState {
   def awaitTermination(system: ActorSystem) {
     try {
       actorLatch.await()
-      system.shutdown()
-
-      Thread.sleep(5000)
+      Await.result(system.terminate(), Duration.Inf)
     } catch {
       case ex: InterruptedException => {
         ex.printStackTrace()

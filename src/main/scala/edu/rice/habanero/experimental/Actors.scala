@@ -1,8 +1,8 @@
 package edu.rice.habanero.experimental
 
 import akka.actor._
-import akka.cluster.{Member, MemberStatus, Cluster}
 import akka.cluster.ClusterEvent._
+import akka.cluster.{Cluster, Member, MemberStatus}
 import edu.rice.habanero.experimental.Worker.WorkerRegistration
 
 object Worker {

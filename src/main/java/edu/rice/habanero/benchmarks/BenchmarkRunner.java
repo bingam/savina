@@ -69,10 +69,7 @@ public class BenchmarkRunner {
                 benchmark.runIteration();
                 final long endTime = System.nanoTime();
 
-                double execTimeMillis =  (endTime - startTime) / 1e6;;
-                if (benchmarkName.contains("Akka")) {
-                    execTimeMillis -= 5000 ;
-                }
+                final double execTimeMillis =  (endTime - startTime) / 1e6;
 
                 rawExecTimes.add(execTimeMillis);
 
